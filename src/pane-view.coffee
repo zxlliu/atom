@@ -20,6 +20,8 @@ class PaneView extends View
 
   @content: (wrappedView) ->
     @div class: 'pane', tabindex: -1, =>
+      @div class: 'pane-view-resize-horizontal-handle'
+      @div class: 'pane-view-resize-vertical-handle'
       @div class: 'item-views', outlet: 'itemViews'
 
   @delegatesProperties 'items', 'activeItem', toProperty: 'model'
@@ -44,6 +46,9 @@ class PaneView extends View
     @handleEvents()
 
   handleEvents: ->
+    @on 'mousedown', '.pane-view-resize-horizontal-handle', (e) => @resizeStarted(e)
+    @on 'mousedown', '.pane-view-resize-vertical-handle', (e) => @resizeStarted(e)
+
     @subscribe @model.$activeItem, @onActiveItemChanged
     @subscribe @model, 'item-added', @onItemAdded
     @subscribe @model, 'item-removed', @onItemRemoved
@@ -182,6 +187,18 @@ class PaneView extends View
 
   activeItemTitleChanged: =>
     @trigger 'pane:active-item-title-changed'
+
+  resizeStarted: =>
+    $(document.body).on('mousemove', @resizePaneView)
+    $(document.body).on('mouseup', @resizeStopped)
+
+  resizeStopped: =>
+    $(document.body).off('mousemove', @resizeTreeView)
+    $(document.body).off('mouseup', @resizeStopped)
+
+  resizePaneView: ({pageX}) =>
+    width = pageX
+    @css 'max-width', "#{width}px"
 
   viewForItem: (item) ->
     return unless item?
