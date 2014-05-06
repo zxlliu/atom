@@ -59,11 +59,15 @@ LinesComponent = React.createClass
     [newStartRow, newEndRow] = @props.renderedRowRange
     node = @getDOMNode()
 
+    if newEndRow <= oldStartRow or newStartRow >= oldEndRow
+      @renderLines()
+      return
+
     if newEndRow > oldEndRow
       for lineNode in @buildLineNodesForScreenRowRange(oldEndRow, newEndRow)
         node.appendChild(lineNode)
     else if newEndRow < oldEndRow
-      extraLineCount = oldEndRow - Math.max(newEndRow, oldStartRow)
+      extraLineCount = oldEndRow - newEndRow
       while extraLineCount > 0
         node.removeChild(node.lastChild)
         extraLineCount--
