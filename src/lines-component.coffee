@@ -63,14 +63,14 @@ LinesComponent = React.createClass
       for lineNode in @buildLineNodesForScreenRowRange(oldEndRow, newEndRow)
         node.appendChild(lineNode)
     else if newEndRow < oldEndRow
-      extraLineCount = oldEndRow - newEndRow
+      extraLineCount = oldEndRow - Math.max(newEndRow, oldStartRow)
       while extraLineCount > 0
         node.removeChild(node.lastChild)
         extraLineCount--
 
     if newStartRow < oldStartRow
       oldFirstLineNode = node.firstChild
-      for lineNode in @buildLineNodesForScreenRowRange(newStartRow, oldStartRow)
+      for lineNode in @buildLineNodesForScreenRowRange(newStartRow, Math.min(newEndRow, oldStartRow))
         node.insertBefore(lineNode, oldFirstLineNode)
     else if newStartRow > oldStartRow
       extraLineCount = newStartRow - oldStartRow
