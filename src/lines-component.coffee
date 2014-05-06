@@ -2,6 +2,7 @@ React = require 'react'
 {div, span} = require 'reactionary'
 {debounce, isEqual, isEqualForProperties, multiplyString} = require 'underscore-plus'
 {$$} = require 'space-pen'
+EditorView = require './editor-view'
 
 DummyLineNode = $$(-> @div className: 'line', style: 'position: absolute; visibility: hidden;', => @span 'x')[0]
 AcceptFilter = {acceptNode: -> NodeFilter.FILTER_ACCEPT}
@@ -11,15 +12,7 @@ LinesComponent = React.createClass
   displayName: 'LinesComponent'
 
   render: ->
-    if @isMounted()
-      {editor, renderedRowRange, lineHeight, showIndentGuide} = @props
-      [startRow, endRow] = renderedRowRange
-
-      lines =
-        for tokenizedLine, i in editor.linesForScreenRows(startRow, endRow - 1)
-          LineComponent({key: tokenizedLine.id, tokenizedLine, showIndentGuide, lineHeight, screenRow: startRow + i})
-
-    div {className: 'lines'}, lines
+    div className: 'lines'
 
   componentWillMount: ->
     @measuredLines = new WeakSet
@@ -37,6 +30,7 @@ LinesComponent = React.createClass
     false
 
   componentDidUpdate: (prevProps) ->
+    @updateRenderedLines()
     @measureLineHeightAndCharWidth() unless isEqualForProperties(prevProps, @props, 'fontSize', 'fontFamily', 'lineHeight')
     @clearScopedCharWidths() unless isEqualForProperties(prevProps, @props, 'fontSize', 'fontFamily')
     @measureCharactersInNewLines() unless @props.scrollingVertically
@@ -51,6 +45,40 @@ LinesComponent = React.createClass
     {editor} = @props
     editor.setLineHeight(lineHeight)
     editor.setDefaultCharWidth(charWidth)
+
+  updateRenderedLines: ->
+    {editor, renderedRowRange, lineHeight} = @props
+    [startRow, endRow] = renderedRowRange
+
+    linesHTML = ""
+    for tokenizedLine, i in editor.linesForScreenRows(startRow, endRow)
+      linesHTML += @htmlForTokenizedLine(tokenizedLine, startRow + i)
+
+    @getDOMNode().innerHTML = linesHTML
+
+  htmlForTokenizedLine: (screenLine, screenRow) ->
+    {tokens, text, lineEnding, fold, isSoftWrapped} =  screenLine
+    {editor, lineHeight, showIndentGuide, mini} = @props
+
+    attributes =
+      class: "line"
+      style: "position: absolute; top: #{screenRow * lineHeight}px"
+
+    if fold
+      attributes.class += " fold"
+      attributes['fold-id'] = fold.id
+
+    # invisibles = @invisibles if @showInvisibles
+    # eolInvisibles = @getEndOfLineInvisibles(screenLine)
+    # htmlEolInvisibles = @buildHtmlEndOfLineInvisibles(screenLine)
+
+    invisibles = {}
+    eolInvisibles = {}
+    htmlEolInvisibles = ""
+
+    indentation = EditorView.buildIndentation(screenRow, editor)
+
+    EditorView.buildLineHtml({tokens, text, lineEnding, fold, isSoftWrapped, invisibles, eolInvisibles, htmlEolInvisibles, attributes, showIndentGuide, indentation, editor, mini})
 
   measureCharactersInNewLines: ->
     [visibleStartRow, visibleEndRow] = @props.renderedRowRange
@@ -97,44 +125,3 @@ LinesComponent = React.createClass
   clearScopedCharWidths: ->
     @measuredLines.clear()
     @props.editor.clearScopedCharWidths()
-
-
-LineComponent = React.createClass
-  displayName: 'LineComponent'
-
-  render: ->
-    {screenRow, lineHeight} = @props
-
-    style =
-      top: screenRow * lineHeight
-      position: 'absolute'
-
-    div className: 'line', style: style, 'data-screen-row': screenRow, dangerouslySetInnerHTML: {__html: @buildInnerHTML()}
-
-  buildInnerHTML: ->
-    if @props.tokenizedLine.text.length is 0
-      @buildEmptyLineHTML()
-    else
-      @buildScopeTreeHTML(@props.tokenizedLine.getScopeTree())
-
-  buildEmptyLineHTML: ->
-    {showIndentGuide, tokenizedLine} = @props
-    {indentLevel, tabLength} = tokenizedLine
-
-    if showIndentGuide and indentLevel > 0
-      indentSpan = "<span class='indent-guide'>#{multiplyString(' ', tabLength)}</span>"
-      multiplyString(indentSpan, indentLevel + 1)
-    else
-      "&nbsp;"
-
-  buildScopeTreeHTML: (scopeTree) ->
-    if scopeTree.children?
-      html = "<span class='#{scopeTree.scope.replace(/\./g, ' ')}'>"
-      html += @buildScopeTreeHTML(child) for child in scopeTree.children
-      html += "</span>"
-      html
-    else
-      "<span>#{scopeTree.getValueAsHtml({hasIndentGuide: @props.showIndentGuide})}</span>"
-
-  shouldComponentUpdate: (newProps) ->
-    not isEqualForProperties(newProps, @props, 'showIndentGuide', 'lineHeight', 'screenRow')
