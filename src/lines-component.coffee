@@ -1,6 +1,6 @@
 React = require 'react'
 {div, span} = require 'reactionary'
-{debounce, isEqual, isEqualForProperties, multiplyString} = require 'underscore-plus'
+{debounce, isEqual, isEqualForProperties, multiplyString, toArray} = require 'underscore-plus'
 {$$} = require 'space-pen'
 EditorView = require './editor-view'
 
@@ -30,10 +30,14 @@ LinesComponent = React.createClass
     false
 
   componentDidUpdate: (prevProps) ->
-    @updateRenderedLines()
+    if not prevProps.renderedRowRange? or prevProps.lineHeight isnt @props.lineHeight
+      @renderLines()
+    else
+      @updateRenderedLines(prevProps.renderedRowRange)
+
     @measureLineHeightAndCharWidth() unless isEqualForProperties(prevProps, @props, 'fontSize', 'fontFamily', 'lineHeight')
-    @clearScopedCharWidths() unless isEqualForProperties(prevProps, @props, 'fontSize', 'fontFamily')
-    @measureCharactersInNewLines() unless @props.scrollingVertically
+    # @clearScopedCharWidths() unless isEqualForProperties(prevProps, @props, 'fontSize', 'fontFamily')
+    # @measureCharactersInNewLines() unless @props.scrollingVertically
 
   measureLineHeightAndCharWidth: ->
     node = @getDOMNode()
@@ -46,17 +50,48 @@ LinesComponent = React.createClass
     editor.setLineHeight(lineHeight)
     editor.setDefaultCharWidth(charWidth)
 
-  updateRenderedLines: ->
-    {editor, renderedRowRange, lineHeight} = @props
-    [startRow, endRow] = renderedRowRange
+  renderLines: ->
+    [startRow, endRow] = @props.renderedRowRange
+    @getDOMNode().innerHTML = @buildHTMLForScreenRowRange(startRow, endRow)
+
+  updateRenderedLines: (oldRenderedRowRange) ->
+    [oldStartRow, oldEndRow] = oldRenderedRowRange
+    [newStartRow, newEndRow] = @props.renderedRowRange
+    node = @getDOMNode()
+
+    if newEndRow > oldEndRow
+      for lineNode in @buildLineNodesForScreenRowRange(oldEndRow, newEndRow)
+        node.appendChild(lineNode)
+    else if newEndRow < oldEndRow
+      extraLineCount = oldEndRow - newEndRow
+      while extraLineCount > 0
+        node.removeChild(node.lastChild)
+        extraLineCount--
+
+    if newStartRow < oldStartRow
+      oldFirstLineNode = node.firstChild
+      for lineNode in @buildLineNodesForScreenRowRange(newStartRow, oldStartRow)
+        node.insertBefore(lineNode, oldFirstLineNode)
+    else if newStartRow > oldStartRow
+      extraLineCount = newStartRow - oldStartRow
+      while extraLineCount > 0
+        node.removeChild(node.firstChild)
+        extraLineCount--
+
+  buildLineNodesForScreenRowRange: (startRow, endRow) ->
+    wrapper = document.createElement('div')
+    wrapper.innerHTML = @buildHTMLForScreenRowRange(startRow, endRow)
+    toArray(wrapper.children)
+
+  buildHTMLForScreenRowRange: (startRow, endRow) ->
+    {editor} = @props
 
     linesHTML = ""
-    for tokenizedLine, i in editor.linesForScreenRows(startRow, endRow)
-      linesHTML += @htmlForTokenizedLine(tokenizedLine, startRow + i)
+    for tokenizedLine, i in editor.linesForScreenRows(startRow, endRow - 1)
+      linesHTML += @buildHTMLForTokenizedLine(tokenizedLine, startRow + i)
+    linesHTML
 
-    @getDOMNode().innerHTML = linesHTML
-
-  htmlForTokenizedLine: (screenLine, screenRow) ->
+  buildHTMLForTokenizedLine: (screenLine, screenRow) ->
     {tokens, text, lineEnding, fold, isSoftWrapped} =  screenLine
     {editor, lineHeight, showIndentGuide, mini} = @props
 
