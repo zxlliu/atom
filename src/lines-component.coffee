@@ -97,7 +97,7 @@ LinesComponent = React.createClass
 
     attributes =
       class: "line"
-      style: "position: absolute; top: #{screenRow * lineHeight}px"
+      style: "-webkit-transform: translate3d(0, #{screenRow * lineHeight}px, 0)"
 
     if fold
       attributes.class += " fold"
