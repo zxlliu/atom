@@ -135,6 +135,13 @@ class Atom extends Model
       @executeJavaScriptInDevTools('InspectorFrontendAPI.showConsole()')
       @emit 'uncaught-error', arguments...
 
+    nativeConsoleError = console.error
+
+    console.error = =>
+      @openDevTools()
+      @executeJavaScriptInDevTools('InspectorFrontendAPI.showConsole()')
+      nativeConsoleError.call console, arguments...
+
     @unsubscribe()
     @setBodyPlatformClass()
 
