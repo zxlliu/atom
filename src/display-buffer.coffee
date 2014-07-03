@@ -1075,7 +1075,21 @@ class DisplayBuffer extends Model
         @longestScreenRow = maxLengthCandidatesStartRow + screenRow
         @maxLineLength = length
 
+    if atom.config.get('editor.debugFindMaxLineLength')
+      unless @maxLineLength is @findReferenceMaxLineLength()
+        debugger
+        throw new Error("Found wrong max line length")
+
     @computeScrollWidth() if oldMaxLineLength isnt @maxLineLength
+
+  findReferenceMaxLineLength: ->
+    maxLineLength = 0
+
+    for line in @screenLines
+      length = line.text.length
+      maxLineLength = length if length > maxLineLength
+
+    maxLineLength
 
   computeScrollWidth: ->
     @scrollWidth = @pixelPositionForScreenPosition([@longestScreenRow, @maxLineLength]).left + 1
