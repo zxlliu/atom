@@ -304,11 +304,11 @@ class Atom extends Model
     @config.setDefaults('editor', require('./editor-view').configDefaults)
     @keymaps.loadBundledKeymaps()
     @themes.loadBaseStylesheets()
-    @packages.loadPackages()
+    # @packages.loadPackages()
     @deserializeEditorWindow()
-    @packages.activate()
+    # @packages.activate()
     @keymaps.loadUserKeymap()
-    @requireUserInitScript()
+    # @requireUserInitScript()
     @menu.update()
 
     $(window).on 'unload', =>
