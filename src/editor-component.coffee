@@ -531,6 +531,7 @@ EditorComponent = React.createClass
     event.preventDefault() unless event.data is ' '
 
     return unless @isInputEnabled()
+    event.reactSkipEventDispatch = true
 
     {editor} = @props
     inputNode = event.target
