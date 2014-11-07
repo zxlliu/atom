@@ -26,16 +26,16 @@ class Package
 
   @stylesheetsDir: 'stylesheets'
 
-  @isBundledPackagePath: (packagePath) ->
-    if atom.packages.devMode
-      return false unless atom.packages.resourcePath.startsWith("#{process.resourcesPath}#{path.sep}")
+  @isBundledPackagePath: (packagePath, resourcePath, devMode) ->
+    if devMode
+      return false unless resourcePath.startsWith("#{process.resourcesPath}#{path.sep}")
 
-    @resourcePathWithTrailingSlash ?= "#{atom.packages.resourcePath}#{path.sep}"
+    @resourcePathWithTrailingSlash ?= "#{resourcePath}#{path.sep}"
     packagePath?.startsWith(@resourcePathWithTrailingSlash)
 
-  @loadMetadata: (packagePath, ignoreErrors=false) ->
+  @loadMetadata: (packagePath, {ignoreErrors, devMode, resourcePath}={}) ->
     packageName = path.basename(packagePath)
-    if @isBundledPackagePath(packagePath)
+    if @isBundledPackagePath(packagePath, resourcePath, devMode)
       metadata = packagesCache[packageName]?.metadata
     unless metadata?
       if metadataPath = CSON.resolve(path.join(packagePath, 'package'))

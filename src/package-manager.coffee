@@ -228,7 +228,7 @@ class PackageManager
     packages = []
     for packagePath in @getAvailablePackagePaths()
       name = path.basename(packagePath)
-      metadata = @getLoadedPackage(name)?.metadata ? Package.loadMetadata(packagePath, true)
+      metadata = @getLoadedPackage(name)?.metadata ? Package.loadMetadata(packagePath, {ignoreErrors: true, @resourcePath, @devMode})
       packages.push(metadata)
     packages
 
@@ -252,7 +252,7 @@ class PackageManager
     @packageDependencies
 
   hasAtomEngine: (packagePath) ->
-    metadata = Package.loadMetadata(packagePath, true)
+    metadata = Package.loadMetadata(packagePath, ignoreErrors: true)
     metadata?.engines?.atom?
 
   unobserveDisabledPackages: ->
