@@ -27,6 +27,9 @@ class Package
   @stylesheetsDir: 'stylesheets'
 
   @isBundledPackagePath: (packagePath, resourcePath, devMode) ->
+    resourcePath ?= atom?.packages.resourcePath
+    devMode ?= atom?.packages.devMode
+
     if devMode
       return false unless resourcePath.startsWith("#{process.resourcesPath}#{path.sep}")
 
