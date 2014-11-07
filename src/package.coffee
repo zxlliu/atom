@@ -31,10 +31,10 @@ class Package
     devMode ?= atom?.packages.devMode
 
     if devMode
-      return false unless resourcePath.startsWith("#{process.resourcesPath}#{path.sep}")
+      return false unless resourcePath.indexOf("#{process.resourcesPath}#{path.sep}") is 0
 
     @resourcePathWithTrailingSlash ?= "#{resourcePath}#{path.sep}"
-    packagePath?.startsWith(@resourcePathWithTrailingSlash)
+    packagePath?.indexOf(@resourcePathWithTrailingSlash) is 0
 
   @loadMetadata: (packagePath, {ignoreErrors, devMode, resourcePath}={}) ->
     packageName = path.basename(packagePath)
