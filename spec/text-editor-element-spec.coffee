@@ -57,7 +57,7 @@ describe "TextEditorElement", ->
         document.body.focus()
         expect(blurCalled).toBe true
 
-  describe "when the themes finish loading", ->
+  describe "when the themes finish loading with the shadow DOM disabled (regressios)", ->
     [themeReloadCallback, initialThemeLoadComplete, element] = []
 
     beforeEach ->
