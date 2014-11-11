@@ -57,6 +57,26 @@ describe "TextEditorElement", ->
         document.body.focus()
         expect(blurCalled).toBe true
 
+  describe "style transfer", ->
+    beforeEach ->
+      waitsForPromise -> atom.themes.activateThemes()
+
+    afterEach ->
+      atom.themes.deactivateThemes()
+
+    ffit "transfers the foreground and background colors into the shadow DOM", ->
+      runs ->
+        element = new TextEditorElement()
+        jasmineContent.appendChild(element)
+        initialBackgroundColor = getComputedStyle(element.shadowRoot.querySelector('.editor')).backgroundColor
+
+        atom.styles.addStyleSheet """
+          atom-text-editor { background: red; }
+        """
+
+        newBackgroundColor = getComputedStyle(element.shadowRoot.querySelector('.editor')).backgroundColor
+        expect(newBackgroundColor).not.toBe initialBackgroundColor
+
   describe "when the themes finish loading with the shadow DOM disabled (regressios)", ->
     [themeReloadCallback, initialThemeLoadComplete, element] = []
 

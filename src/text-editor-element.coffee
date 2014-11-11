@@ -14,7 +14,6 @@ class TextEditorElement extends HTMLElement
   focusOnAttach: false
 
   createdCallback: ->
-    @subscriptions =
     @initializeContent()
     @createSpacePenShim()
     @addEventListener 'focus', @focused.bind(this)
@@ -36,12 +35,17 @@ class TextEditorElement extends HTMLElement
 
       @shadowRoot.appendChild(@stylesElement)
       @shadowRoot.appendChild(@rootElement)
+
+      if atom.themes.isInitialLoadComplete()
+        @observeGlobalStyles()
+      else
+        loadSubscription = atom.themes.onDidReloadAll(@observeGlobalStyles.bind(this))
+
     else
       @stylesElement = document.head.querySelector('atom-styles')
       @rootElement = this
 
     @rootElement.classList.add('editor', 'editor-colors')
-
 
   createSpacePenShim: ->
     TextEditorView ?= require './text-editor-view'
@@ -52,6 +56,29 @@ class TextEditorElement extends HTMLElement
     @mountComponent() unless @component?.isMounted()
     @component.checkForVisibilityChange()
     @focus() if @focusOnAttach
+
+  observeGlobalStyles: ->
+    globalStyles = document.head.querySelector('atom-styles')
+    globalStyles.onDidAddStyleElement(@transferComputedStyles.bind(this))
+    @transferComputedStyles()
+
+  transferComputedStyles: ->
+    unless @hostOverrideStyleElement?
+      @hostOverrideStyleElement = document.createElement('style')
+      @shadowRoot.insertBefore(@hostOverrideStyleElement, @stylesElement.nextSibling)
+
+    {color, backgroundColor} = getComputedStyle(this)
+
+    @hostOverrideStyleElement.textContent = """
+      .editor-colors {
+        background-color: #{backgroundColor};
+        color: #{color};
+      }
+
+      .cursor {
+        border-color: #{color};
+      }
+    """
 
   setModel: (model) ->
     throw new Error("Model already assigned on TextEditorElement") if @model?
